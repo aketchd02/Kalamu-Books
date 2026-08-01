@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Kalamu Books</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B3A2F">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{
+    --ink:#211D18; --inkSoft:#5B5346; --paper:#F1ECDF; --card:#FBF9F3;
+    --forest:#1B3A2F; --forestLight:#2F5745; --brick:#A13B2C; --ochre:#B8862E;
+    --leaf:#4C7A5A; --hairline:#D9D0BB;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#E5DFCE;font-family:'Inter',system-ui,sans-serif;color:var(--ink);}
+  .frame{max-width:400px;margin:24px auto;height:840px;background:var(--paper);border:4px solid #0F241C;
+    border-radius:2rem;overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.35);}
+  .status{background:var(--forest);color:var(--paper);display:flex;justify-content:space-between;
+    padding:10px 20px 6px;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+  .head{background:var(--forest);padding:2px 18px 16px;display:flex;align-items:center;justify-content:space-between;}
+  .head-left{display:flex;align-items:center;gap:8px;}
+  .head-badge{background:var(--paper);border-radius:10px;padding:6px 8px;font-size:16px;}
+  .head h1{font-family:'Fraunces',Georgia,serif;color:var(--paper);font-size:17px;margin:0;line-height:1;}
+  .head p{color:#BFD3C7;font-size:9.5px;letter-spacing:.03em;margin:3px 0 0;}
+  .gear{background:transparent;border:none;color:var(--paper);font-size:18px;cursor:pointer;}
+  .content{position:absolute;top:108px;bottom:72px;left:0;right:0;overflow-y:auto;padding:16px;}
+  .nav{position:absolute;bottom:0;left:0;right:0;background:var(--forest);border-top:1px solid var(--forestLight);
+    display:flex;justify-content:space-around;padding:9px 0;}
+  .nav button{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;
+    color:var(--paper);opacity:.55;font-size:9px;font-family:'Inter',sans-serif;font-weight:500;cursor:pointer;}
+  .nav button.active{opacity:1;color:var(--ochre);}
+  .nav button .ic{font-size:17px;}
+  h2.section{font-family:'Fraunces',Georgia,serif;font-size:19px;margin:0 0 2px;}
+  p.sub{color:var(--inkSoft);font-size:11px;margin:0 0 14px;}
+  .hdr-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+  .card{background:var(--card);border:1px solid var(--hairline);border-radius:14px;padding:14px;margin-bottom:10px;}
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+  .money{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .money.leaf{color:var(--leaf);} .money.brick{color:var(--brick);} .money.ink{color:var(--ink);}
+  .btn{background:var(--forest);color:var(--paper);border:none;border-radius:999px;padding:8px 14px;
+    font-size:12px;font-weight:600;cursor:pointer;}
+  .btn.ochre{background:var(--ochre);} .btn.brick{background:var(--brick);}
+  .btn.ghost{background:transparent;border:1px solid var(--hairline);color:var(--ink);}
+  .seg{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;}
+  .seg button{flex:0 0 auto;background:var(--card);border:1px solid var(--hairline);border-radius:999px;
+    padding:6px 12px;font-size:11px;font-weight:600;color:var(--inkSoft);cursor:pointer;white-space:nowrap;}
+  .seg button.active{background:var(--forest);color:var(--paper);border-color:var(--forest);}
+  .stamp{display:inline-block;border:1.5px dashed var(--forest);color:var(--forest);border-radius:999px;
+    padding:2px 9px;font-family:'Fraunces',Georgia,serif;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    transform:rotate(-2deg);font-weight:600;white-space:nowrap;}
+  .stamp.leaf{border-color:var(--leaf);color:var(--leaf);}
+  .stamp.brick{border-color:var(--brick);color:var(--brick);}
+  .stamp.ochre{border-color:var(--ochre);color:var(--ochre);}
+  .row-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--hairline);}
+  .row-item:last-child{border-bottom:none;}
+  .empty{text-align:center;padding:50px 10px;color:var(--inkSoft);font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:13px;}
+  .sheet-overlay{position:absolute;inset:0;background:rgba(27,58,47,.55);z-index:30;display:flex;flex-direction:column;}
+  .sheet{margin-top:auto;background:var(--paper);border-radius:22px 22px 0 0;padding:18px;max-height:88%;overflow-y:auto;}
+  .sheet h3{font-family:'Fraunces',Georgia,serif;font-size:16px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;}
+  .sheet h3 span.x{cursor:pointer;color:var(--inkSoft);font-size:18px;}
+  label.field{display:block;margin-bottom:10px;}
+  label.field span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;color:var(--inkSoft);margin-bottom:4px;}
+  input,select,textarea{width:100%;background:var(--card);border:1px solid var(--hairline);border-radius:10px;
+    padding:9px 11px;color:var(--ink);font-family:'Inter',sans-serif;font-size:13.5px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .item-row{display:grid;grid-template-columns:2.2fr 0.7fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center;}
+  .item-row input{padding:7px 8px;font-size:12.5px;}
+  .totalline{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;}
+  .totalline.bold{font-weight:700;border-top:1px dashed var(--hairline);margin-top:4px;padding-top:8px;}
+  .icon-x{background:none;border:none;color:var(--brick);font-size:15px;cursor:pointer;}
+  .pill-attach{border:1px dashed var(--hairline);border-radius:10px;padding:10px;text-align:center;font-size:11.5px;color:var(--inkSoft);}
+  .thumb{width:100%;border-radius:8px;margin-top:8px;max-height:120px;object-fit:cover;}
+  .toast{position:absolute;bottom:84px;left:16px;right:16px;background:var(--forest);color:var(--paper);
+    padding:10px 14px;border-radius:10px;font-size:12px;text-align:center;z-index:50;opacity:0;transition:opacity .25s;}
+  .toast.show{opacity:1;}
+  .pdfbtn{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--hairline);
+    border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;color:var(--forest);cursor:pointer;}
+  a.linklike{color:var(--forest);text-decoration:underline;font-size:11.5px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="status"><span>9:41</span><span>●●●● 100%</span></div>
+  <div class="head">
+    <div class="head-left">
+      <div class="head-badge">💼</div>
+      <div><h1>Kalamu Books</h1><p>free & yours, no subscription</p></div>
+    </div>
+    <button class="gear" onclick="App.openSettings()">⚙</button>
+  </div>
+  <div class="content" id="content"></div>
+  <div class="nav" id="nav"></div>
+  <div id="sheetHost"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ===================== INDEXEDDB LAYER ===================== */
+const DB_NAME = "kalamuBooksDB", DB_VER = 1;
+const STORES = ["salesDocs","purchaseDocs","inventory","settings"];
+let dbPromise = new Promise((resolve, reject) => {
+  const req = indexedDB.open(DB_NAME, DB_VER);
+  req.onupgradeneeded = (e) => {
+    const db = e.target.result;
+    STORES.forEach(s => { if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: "id" }); });
+  };
+  req.onsuccess = () => resolve(req.result);
+  req.onerror = () => reject(req.error);
+});
+async function dbAll(store){
+  const db = await dbPromise;
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, "readonly").objectStore(store).getAll();
+    tx.onsuccess = () => res(tx.result || []);
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function dbPut(store, record){
+  const db = await dbPromise;
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, "readwrite").objectStore(store).put(record);
+    tx.onsuccess = () => res(record);
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function dbDel(store, id){
+  const db = await dbPromise;
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, "readwrite").objectStore(store).delete(id);
+    tx.onsuccess = () => res(true);
+    tx.onerror = () => rej(tx.error);
+  });
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function fmt(n){ n = Number(n)||0; return "KSh " + n.toLocaleString("en-KE",{maximumFractionDigits:0}); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function niceDate(d){ const dt = new Date(d); return isNaN(dt) ? "—" : dt.toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"}); }
+function monthKey(d){ const dt = new Date(d); return isNaN(dt) ? "—" : dt.toLocaleDateString("en-KE",{month:"short",year:"2-digit"}); }
+function esc(s){ return (s||"").toString().replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function toast(msg){ const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 1800); }
+
+/* ===================== CONSTANTS ===================== */
+const EXPENSE_CATEGORIES = ["Rent","Supplies","Transport","Utilities","Salaries","Marketing","Inventory Purchase","Professional fees","Other"];
+const SALES_TYPES = { invoice:"Invoice", receipt:"Sales Receipt", estimate:"Estimate", creditMemo:"Credit Memo" };
+const PURCHASE_TYPES = { expense:"Expense", bill:"Bill", po:"Purchase Order", claim:"Expense Claim" };
+
+/* ===================== STATE ===================== */
+const App = {
+  tab: "dashboard",
+  salesSeg: "invoice",
+  purchaseSeg: "expense",
+  data: { salesDocs: [], purchaseDocs: [], inventory: [], settings: null },
+
+  async init(){
+    const [sales, purch, inv, settingsArr] = await Promise.all([
+      dbAll("salesDocs"), dbAll("purchaseDocs"), dbAll("inventory"), dbAll("settings")
+    ]);
+    this.data.salesDocs = sales.sort((a,b)=> new Date(b.date)-new Date(a.date));
+    this.data.purchaseDocs = purch.sort((a,b)=> new Date(b.date)-new Date(a.date));
+    this.data.inventory = inv;
+    this.data.settings = settingsArr[0] || { id:"main", businessName:"My Business", kraPin:"", phone:"", location:"Nairobi, Kenya" };
+    this.renderNav();
+    this.render();
+  },
+
+  go(tab){ this.tab = tab; this.render(); },
+
+  renderNav(){
+    const items = [
+      ["dashboard","🏠","Home"], ["sales","🧾","Sales"], ["purchases","🧮","Purchases"],
+      ["inventory","📦","Stock"], ["reports","📊","Reports"]
+    ];
+    document.getElementById("nav").innerHTML = items.map(([id,ic,label]) =>
+      `<button class="${this.tab===id?'active':''}" onclick="App.go('${id}')"><span class="ic">${ic}</span>${label}</button>`
+    ).join("");
+  },
+
+  render(){
+    this.renderNav();
+    const c = document.getElementById("content");
+    if (this.tab==="dashboard") c.innerHTML = this.viewDashboard();
+    else if (this.tab==="sales") c.innerHTML = this.viewSales();
+    else if (this.tab==="purchases") c.innerHTML = this.viewPurchases();
+    else if (this.tab==="inventory") c.innerHTML = this.viewInventory();
+    else if (this.tab==="reports") c.innerHTML = this.viewReports();
+  },
+
+  /* ---------- derived numbers ---------- */
+  totals(){
+    const s = this.data.salesDocs, p = this.data.purchaseDocs;
+    const income = s.filter(d => (d.type==="invoice"||d.type==="receipt") && d.status==="paid")
+      .reduce((sum,d)=> sum + Number(d.amount), 0)
+      - s.filter(d=>d.type==="creditMemo").reduce((sum,d)=> sum + Number(d.amount), 0);
+    const due = s.filter(d => d.type==="invoice" && d.status!=="paid").reduce((sum,d)=> sum + Number(d.amount), 0);
+    const expenses = p.filter(d => d.type==="expense" || d.type==="bill" || d.type==="claim")
+      .reduce((sum,d)=> sum + Number(d.amount), 0);
+    const inventoryValue = this.data.inventory.reduce((sum,i)=> sum + Number(i.qty)*Number(i.unitCost||0), 0);
+    return { income, due, expenses, net: income-expenses, inventoryValue };
+  },
+
+  /* ================= DASHBOARD ================= */
+  viewDashboard(){
+    const t = this.totals();
+    const low = this.data.inventory.filter(i => Number(i.qty) <= Number(i.lowStock||0));
+    const recent = [...this.data.salesDocs, ...this.data.purchaseDocs]
+      .sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,6);
+    return `
+      <h2 class="section">Overview</h2><p class="sub">All figures, all time</p>
+      <div class="kpi-grid">
+        <div class="card"><div class="kpi-label" style="color:var(--leaf)">Income received</div>
+          <div class="money leaf" style="font-size:15px;margin-top:4px">${fmt(t.income)}</div></div>
+        <div class="card"><div class="kpi-label" style="color:var(--brick)">Expenses</div>
+          <div class="money brick" style="font-size:15px;margin-top:4px">${fmt(t.expenses)}</div></div>
+        <div class="card"><div class="kpi-label" style="color:var(--inkSoft)">Awaiting payment</div>
+          <div class="money ink" style="font-size:15px;margin-top:4px">${fmt(t.due)}</div></div>
+        <div class="card" style="background:${t.net>=0?'#E8EFE9':'#F3E4E0'}"><div class="kpi-label" style="color:var(--inkSoft)">Net profit</div>
+          <div class="money ${t.net>=0?'leaf':'brick'}" style="font-size:15px;margin-top:4px">${fmt(t.net)}</div></div>
+      </div>
+      ${low.length ? `<div class="card" style="background:#F6EDE2;margin-bottom:14px">
+        <div style="color:var(--ochre);font-size:12px;font-weight:600;margin-bottom:4px">⚠ ${low.length} item(s) running low</div>
+        <a class="linklike" onclick="App.go('inventory')">View stock</a></div>` : ""}
+      <h2 class="section">Recent activity</h2><p class="sub">Last 6 records</p>
+      ${recent.length===0 ? `<div class="empty">Nothing recorded yet — add your first invoice or expense.</div>` :
+        recent.map(r => {
+          const isSale = !!SALES_TYPES[r.type];
+          const label = isSale ? (r.client||"—") : (r.desc||r.party||"—");
+          return `<div class="row-item"><div><div style="font-size:13px;font-weight:500">${esc(label)}</div>
+            <div style="font-size:10.5px;color:var(--inkSoft)">${(isSale?SALES_TYPES[r.type]:PURCHASE_TYPES[r.type])} · ${niceDate(r.date)}</div></div>
+            <span class="money ${isSale?'leaf':'brick'}">${fmt(r.amount)}</span></div>`;
+        }).join("")}
+    `;
+  },
+
+  /* ================= SALES ================= */
+  viewSales(){
+    const list = this.data.salesDocs.filter(d => d.type === this.salesSeg);
+    return `
+      <div class="hdr-row"><div><h2 class="section">Sales</h2><p class="sub">${list.length} ${SALES_TYPES[this.salesSeg]}${list.length===1?'':'s'}</p></div>
+        <button class="btn" onclick="App.openSalesForm()">+ New</button></div>
+      <div class="seg">${Object.entries(SALES_TYPES).map(([k,v])=>
+        `<button class="${this.salesSeg===k?'active':''}" onclick="App.setSalesSeg('${k}')">${v}</button>`).join("")}</div>
+      ${list.length===0 ? `<div class="empty">No ${SALES_TYPES[this.salesSeg].toLowerCase()}s yet.</div>` :
+        list.map(d => `
+        <div class="card">
+          <div class="hdr-row" style="margin-bottom:0">
+            <div><div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13.5px">${esc(d.client)}</div>
+              <div style="font-size:10.5px;color:var(--inkSoft);margin-top:2px">Issued ${niceDate(d.date)}${d.dueDate?' · Due '+niceDate(d.dueDate):''}</div></div>
+            ${d.type==="invoice" ? `<span class="stamp ${d.status==='paid'?'leaf':'brick'}">${d.status==='paid'?'Paid':'Due'}</span>` : ""}
+          </div>
+          <div class="hdr-row" style="margin-top:10px;margin-bottom:0;align-items:center">
+            <span class="money ink" style="font-size:14px">${fmt(d.amount)}</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              ${d.type==="invoice" ? `<a class="linklike" onclick="App.toggleSalesPaid('${d.id}')">${d.status==='paid'?'Mark due':'Mark paid'}</a>` : ""}
+              <button class="pdfbtn" onclick="PDF.salesDoc('${d.id}')">📄 PDF</button>
+              <button class="icon-x" onclick="App.deleteSales('${d.id}')">🗑</button>
+            </div>
+          </div>
+        </div>`).join("")}
+    `;
+  },
+  setSalesSeg(k){ this.salesSeg = k; this.render(); },
+  toggleSalesPaid(id){
+    const d = this.data.salesDocs.find(x=>x.id===id); d.status = d.status==="paid" ? "due" : "paid";
+    dbPut("salesDocs", d); this.render();
+  },
+  deleteSales(id){
+    this.data.salesDocs = this.data.salesDocs.filter(x=>x.id!==id);
+    dbDel("salesDocs", id); this.render(); toast("Deleted");
+  },
+
+  openSalesForm(){
+    const type = this.salesSeg;
+    const isCredit = type === "creditMemo";
+    const isItemized = type==="invoice" || type==="receipt" || type==="estimate";
+    const invoiceOptions = this.data.salesDocs.filter(d=>d.type==="invoice");
+    const html = `
+      <div class="sheet">
+        <h3>New ${SALES_TYPES[type]} <span class="x" onclick="App.closeSheet()">✕</span></h3>
+        <label class="field"><span>Client name</span><input id="f_client" placeholder="e.g. Carrefour Santa Maria"></label>
+        ${isCredit ? `<label class="field"><span>Against invoice (optional)</span>
+          <select id="f_link"><option value="">— none —</option>
+          ${invoiceOptions.map(i=>`<option value="${i.id}">${esc(i.client)} · ${fmt(i.amount)} · ${niceDate(i.date)}</option>`).join("")}
+          </select></label>` : ""}
+        ${isItemized ? `
+          <span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;color:var(--inkSoft)">Line items</span>
+          <div id="itemsWrap" style="margin-top:6px"></div>
+          <button class="btn ghost" style="margin-bottom:12px" onclick="App.addItemRow()">+ Add line</button>
+          <label class="field"><input type="checkbox" id="f_vat" style="width:auto;display:inline-block;margin-right:6px">
+            <span style="display:inline;text-transform:none;font-weight:500;color:var(--ink)">Add 16% VAT</span></label>
+        ` : `<label class="field"><span>Amount (KSh)</span><input id="f_amount" type="number" placeholder="0"></label>`}
+        <div class="grid2">
+          <label class="field"><span>Date</span><input id="f_date" type="date" value="${today()}"></label>
+          ${type==="invoice" ? `<label class="field"><span>Due date</span><input id="f_due" type="date"></label>` : "<div></div>"}
+        </div>
+        <label class="field"><span>Note (optional)</span><input id="f_note" placeholder="What's this for?"></label>
+        <button class="btn" style="width:100%;padding:12px;font-size:13.5px" onclick="App.saveSalesForm('${type}', ${isItemized})">Save ${SALES_TYPES[type]}</button>
+      </div>`;
+    document.getElementById("sheetHost").innerHTML = `<div class="sheet-overlay">${html}</div>`;
+    if (isItemized) this.addItemRow();
+  },
+  addItemRow(){
+    const wrap = document.getElementById("itemsWrap");
+    const rid = uid();
+    const row = document.createElement("div");
+    row.className = "item-row"; row.id = "row_"+rid;
+    row.innerHTML = `<input placeholder="Description" class="it_desc">
+      <input placeholder="Qty" type="number" value="1" class="it_qty">
+      <input placeholder="Price" type="number" class="it_price">
+      <button class="icon-x" onclick="document.getElementById('row_${rid}').remove()">✕</button>`;
+    wrap.appendChild(row);
+  },
+  saveSalesForm(type, isItemized){
+    const client = document.getElementById("f_client").value.trim();
+    if (!client) return toast("Client name is required");
+    let amount = 0, items = [];
+    if (isItemized){
+      document.querySelectorAll("#itemsWrap .item-row").forEach(row=>{
+        const desc = row.querySelector(".it_desc").value.trim();
+        const qty = Number(row.querySelector(".it_qty").value)||0;
+        const price = Number(row.querySelector(".it_price").value)||0;
+        if (desc) { items.push({desc,qty,price}); amount += qty*price; }
+      });
+      const vat = document.getElementById("f_vat").checked;
+      if (vat) amount = amount * 1.16;
+    } else {
+      amount = Number(document.getElementById("f_amount").value)||0;
+    }
+    const date = document.getElementById("f_date").value || today();
+    const due = document.getElementById("f_due") ? document.getElementById("f_due").value : "";
+    const note = document.getElementById("f_note").value.trim();
+    const link = document.getElementById("f_link") ? document.getElementById("f_link").value : "";
+    const doc = {
+      id: uid(), type, client, items, amount, date, dueDate: due, note,
+      status: type==="invoice" ? "due" : "n/a", linkedTo: link || null
+    };
+    this.data.salesDocs.unshift(doc);
+    dbPut("salesDocs", doc);
+    this.closeSheet(); this.render(); toast(SALES_TYPES[type] + " saved");
+  },
+
+  /* ================= PURCHASES ================= */
+  viewPurchases(){
+    const list = this.data.purchaseDocs.filter(d => d.type === this.purchaseSeg);
+    return `
+      <div class="hdr-row"><div><h2 class="section">Purchases</h2><p class="sub">${list.length} ${PURCHASE_TYPES[this.purchaseSeg]}${list.length===1?'':'s'}</p></div>
+        <button class="btn brick" onclick="App.openPurchaseForm()">+ New</button></div>
+      <div class="seg">${Object.entries(PURCHASE_TYPES).map(([k,v])=>
+        `<button class="${this.purchaseSeg===k?'active':''}" onclick="App.setPurchSeg('${k}')">${v}</button>`).join("")}</div>
+      ${list.length===0 ? `<div class="empty">No ${PURCHASE_TYPES[this.purchaseSeg].toLowerCase()}s logged yet.</div>` :
+        list.map(d => `
+        <div class="card">
+          <div class="hdr-row" style="margin-bottom:0">
+            <div><div style="font-weight:500;font-size:13.5px">${esc(d.desc)}</div>
+              <div style="font-size:10.5px;color:var(--inkSoft);margin-top:2px">${d.party?esc(d.party)+' · ':''}${d.category?esc(d.category)+' · ':''}${niceDate(d.date)}</div></div>
+          </div>
+          ${d.attachment ? `<img class="thumb" src="${d.attachment}">` : ""}
+          <div class="hdr-row" style="margin-top:10px;margin-bottom:0;align-items:center">
+            <span class="money brick" style="font-size:14px">${fmt(d.amount)}</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="pdfbtn" onclick="PDF.purchaseDoc('${d.id}')">📄 PDF</button>
+              <button class="icon-x" onclick="App.deletePurchase('${d.id}')">🗑</button>
+            </div>
+          </div>
+        </div>`).join("")}
+    `;
+  },
+  setPurchSeg(k){ this.purchaseSeg = k; this.render(); },
+  deletePurchase(id){
+    this.data.purchaseDocs = this.data.purchaseDocs.filter(x=>x.id!==id);
+    dbDel("purchaseDocs", id); this.render(); toast("Deleted");
+  },
+  openPurchaseForm(){
+    const type = this.purchaseSeg;
+    const needsParty = type==="bill" || type==="po";
+    const html = `
+      <div class="sheet">
+        <h3>New ${PURCHASE_TYPES[type]} <span class="x" onclick="App.closeSheet()">✕</span></h3>
+        <label class="field"><span>Description</span><input id="p_desc" placeholder="e.g. Fuel for deliveries"></label>
+        ${needsParty ? `<label class="field"><span>${type==='po'?'Supplier':'Vendor'} name</span><input id="p_party" placeholder="e.g. Java Coffee Roasters"></label>` : ""}
+        <label class="field"><span>Category</span><select id="p_cat">${EXPENSE_CATEGORIES.map(c=>`<option>${c}</option>`).join("")}</select></label>
+        <label class="field"><span>Amount (KSh)</span><input id="p_amount" type="number" placeholder="0"></label>
+        <div class="grid2">
+          <label class="field"><span>Date</span><input id="p_date" type="date" value="${today()}"></label>
+          <label class="field"><span>${type==='po'?'Needed by':'Due date'} (optional)</span><input id="p_due" type="date"></label>
+        </div>
+        <label class="field"><span>Attach receipt photo (optional)</span>
+          <input id="p_file" type="file" accept="image/*,application/pdf"></label>
+        <div id="p_preview"></div>
+        <button class="btn brick" style="width:100%;padding:12px;font-size:13.5px;margin-top:6px" onclick="App.savePurchaseForm('${type}')">Save ${PURCHASE_TYPES[type]}</button>
+      </div>`;
+    document.getElementById("sheetHost").innerHTML = `<div class="sheet-overlay">${html}</div>`;
+    document.getElementById("p_file").addEventListener("change", (e)=>{
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        App._pendingAttachment = reader.result;
+        if (file.type.startsWith("image/")) document.getElementById("p_preview").innerHTML = `<img class="thumb" src="${reader.result}">`;
+        else document.getElementById("p_preview").innerHTML = `<p style="font-size:11px;color:var(--inkSoft)">📎 ${esc(file.name)} attached</p>`;
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+  savePurchaseForm(type){
+    const desc = document.getElementById("p_desc").value.trim();
+    if (!desc) return toast("Description is required");
+    const party = document.getElementById("p_party") ? document.getElementById("p_party").value.trim() : "";
+    const category = document.getElementById("p_cat").value;
+    const amount = Number(document.getElementById("p_amount").value)||0;
+    const date = document.getElementById("p_date").value || today();
+    const due = document.getElementById("p_due").value;
+    const doc = { id: uid(), type, desc, party, category, amount, date, dueDate: due, attachment: App._pendingAttachment || null };
+    App._pendingAttachment = null;
+    this.data.purchaseDocs.unshift(doc);
+    dbPut("purchaseDocs", doc);
+    this.closeSheet(); this.render(); toast(PURCHASE_TYPES[type] + " saved");
+  },
+
+  /* ================= INVENTORY ================= */
+  viewInventory(){
+    const inv = this.data.inventory;
+    return `
+      <div class="hdr-row"><div><h2 class="section">Stock</h2><p class="sub">${inv.length} items</p></div>
+        <button class="btn ochre" onclick="App.openItemForm()">+ New</button></div>
+      ${inv.length===0 ? `<div class="empty">No stock items yet.</div>` :
+      inv.map(p => {
+        const low = Number(p.qty) <= Number(p.lowStock||0);
+        return `<div class="card">
+          <div class="hdr-row" style="margin-bottom:0">
+            <div><div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13.5px">${esc(p.name)}</div>
+              <div style="font-size:10.5px;color:var(--inkSoft);margin-top:2px">SKU ${esc(p.sku)||"—"}</div></div>
+            ${low ? `<span class="stamp ochre">Low stock</span>` : ""}
+          </div>
+          <div class="hdr-row" style="margin-top:10px;margin-bottom:0;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="btn ghost" style="padding:4px 10px" onclick="App.adjustQty('${p.id}',-1)">−</button>
+              <span class="money ink">${p.qty}</span>
+              <button class="btn ghost" style="padding:4px 10px" onclick="App.adjustQty('${p.id}',1)">+</button>
+            </div>
+            <div style="text-align:right">
+              <span class="money ink">${fmt(p.unitPrice)}</span>
+              <button class="icon-x" style="display:block;margin-left:auto" onclick="App.deleteItem('${p.id}')">🗑</button>
+            </div>
+          </div>
+        </div>`;
+      }).join("")}
+    `;
+  },
+  adjustQty(id, delta){
+    const p = this.data.inventory.find(x=>x.id===id);
+    p.qty = Math.max(0, Number(p.qty)+delta);
+    dbPut("inventory", p); this.render();
+  },
+  deleteItem(id){
+    this.data.inventory = this.data.inventory.filter(x=>x.id!==id);
+    dbDel("inventory", id); this.render(); toast("Deleted");
+  },
+  openItemForm(){
+    const html = `<div class="sheet"><h3>New stock item <span class="x" onclick="App.closeSheet()">✕</span></h3>
+      <label class="field"><span>Item name</span><input id="i_name" placeholder="e.g. Kombucha 500ml"></label>
+      <label class="field"><span>SKU (optional)</span><input id="i_sku" placeholder="e.g. KMB-500"></label>
+      <div class="grid2">
+        <label class="field"><span>Quantity</span><input id="i_qty" type="number" placeholder="0"></label>
+        <label class="field"><span>Low stock alert at</span><input id="i_low" type="number" value="5"></label>
+        <label class="field"><span>Unit cost (KSh)</span><input id="i_cost" type="number" placeholder="0"></label>
+        <label class="field"><span>Sell price (KSh)</span><input id="i_price" type="number" placeholder="0"></label>
+      </div>
+      <button class="btn ochre" style="width:100%;padding:12px;font-size:13.5px" onclick="App.saveItemForm()">Save item</button>
+    </div>`;
+    document.getElementById("sheetHost").innerHTML = `<div class="sheet-overlay">${html}</div>`;
+  },
+  saveItemForm(){
+    const name = document.getElementById("i_name").value.trim();
+    if (!name) return toast("Item name is required");
+    const item = {
+      id: uid(), name, sku: document.getElementById("i_sku").value.trim(),
+      qty: Number(document.getElementById("i_qty").value)||0,
+      lowStock: Number(document.getElementById("i_low").value)||0,
+      unitCost: Number(document.getElementById("i_cost").value)||0,
+      unitPrice: Number(document.getElementById("i_price").value)||0
+    };
+    this.data.inventory.unshift(item);
+    dbPut("inventory", item);
+    this.closeSheet(); this.render(); toast("Item saved");
+  },
+
+  /* ================= REPORTS ================= */
+  viewReports(){
+    const t = this.totals();
+    const customers = [...new Set(this.data.salesDocs.map(d=>d.client).filter(Boolean))];
+    const catMap = {};
+    this.data.purchaseDocs.forEach(d=>{ catMap[d.category] = (catMap[d.category]||0) + Number(d.amount); });
+    const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+    const maxCat = Math.max(1, ...cats.map(c=>c[1]));
+    return `
+      <h2 class="section">Reports</h2><p class="sub">Generate on-device PDFs — nothing leaves your phone</p>
+      <div class="card">
+        <div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13.5px;margin-bottom:6px">Profit &amp; Loss</div>
+        <div class="totalline"><span>Income</span><span class="money leaf">${fmt(t.income)}</span></div>
+        <div class="totalline"><span>Expenses</span><span class="money brick">-${fmt(t.expenses).replace('KSh ','')}</span></div>
+        <div class="totalline bold"><span>Net profit</span><span class="money ${t.net>=0?'leaf':'brick'}">${fmt(t.net)}</span></div>
+        <button class="pdfbtn" style="margin-top:8px" onclick="PDF.profitLoss()">📄 Export P&amp;L PDF</button>
+      </div>
+      <div class="card">
+        <div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13.5px;margin-bottom:6px">Balance Sheet</div>
+        <div class="totalline"><span>Cash (income − expenses)</span><span class="money ink">${fmt(t.net)}</span></div>
+        <div class="totalline"><span>Inventory value</span><span class="money ink">${fmt(t.inventoryValue)}</span></div>
+        <div class="totalline"><span>Owed to you (receivables)</span><span class="money ink">${fmt(t.due)}</span></div>
+        <div class="totalline bold"><span>Total assets</span><span class="money leaf">${fmt(t.net + t.inventoryValue + t.due)}</span></div>
+        <button class="pdfbtn" style="margin-top:8px" onclick="PDF.balanceSheet()">📄 Export Balance Sheet PDF</button>
+      </div>
+      <div class="card">
+        <div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13.5px;margin-bottom:8px">Expenses by category</div>
+        ${cats.length===0 ? `<p style="font-size:11.5px;color:var(--inkSoft)">No expenses logged yet.</p>` :
+          cats.map(([name,val])=>`
+          <div style="margin-bottom:7px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
+              <span>${esc(name)}</span><span class="money ink">${fmt(val)}</span></div>
+            <div style="background:var(--hairline);border-radius:4px;height:6px">
+              <div style="background:var(--brick);height:6px;border-radius:4px;width:${(val/maxCat*100).toFixed(0)}%"></div></div>
+          </div>`).join("")}
+      </div>
+      <div class="card">
+        <div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13.5px;margin-bottom:8px">General ledger</div>
+        <button class="pdfbtn" onclick="PDF.ledger()">📄 Export full ledger PDF</button>
+      </div>
+      <div class="card">
+        <div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13.5px;margin-bottom:8px">Customer statement</div>
+        ${customers.length===0 ? `<p style="font-size:11.5px;color:var(--inkSoft)">No customers yet.</p>` : `
+        <select id="custSelect">${customers.map(c=>`<option>${esc(c)}</option>`).join("")}</select>
+        <button class="pdfbtn" style="margin-top:8px" onclick="PDF.customerStatement(document.getElementById('custSelect').value)">📄 Export statement PDF</button>`}
+      </div>
+      <div class="card">
+        <div style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13.5px;margin-bottom:6px">Backup your records</div>
+        <p style="font-size:11px;color:var(--inkSoft);margin:0 0 10px">Export everything as one file. Keep it somewhere safe — Drive, WhatsApp to yourself, wherever.</p>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="Backup.exportAll()">⬇ Backup now</button>
+          <label class="btn ghost" style="display:inline-block;cursor:pointer">⬆ Restore
+            <input type="file" accept="application/json" style="display:none" onchange="Backup.importAll(event)"></label>
+        </div>
+      </div>
+    `;
+  },
+
+  /* ---------- settings sheet ---------- */
+  openSettings(){
+    const s = this.data.settings;
+    const html = `<div class="sheet"><h3>Business details <span class="x" onclick="App.closeSheet()">✕</span></h3>
+      <p style="font-size:11px;color:var(--inkSoft);margin-top:-6px">Shown on your PDFs</p>
+      <label class="field"><span>Business name</span><input id="s_name" value="${esc(s.businessName)}"></label>
+      <label class="field"><span>KRA PIN (optional)</span><input id="s_pin" value="${esc(s.kraPin)}"></label>
+      <label class="field"><span>Phone</span><input id="s_phone" value="${esc(s.phone)}"></label>
+      <label class="field"><span>Location</span><input id="s_loc" value="${esc(s.location)}"></label>
+      <button class="btn" style="width:100%;padding:12px;font-size:13.5px" onclick="App.saveSettings()">Save</button>
+    </div>`;
+    document.getElementById("sheetHost").innerHTML = `<div class="sheet-overlay">${html}</div>`;
+  },
+  saveSettings(){
+    const s = {
+      id: "main",
+      businessName: document.getElementById("s_name").value.trim() || "My Business",
+      kraPin: document.getElementById("s_pin").value.trim(),
+      phone: document.getElementById("s_phone").value.trim(),
+      location: document.getElementById("s_loc").value.trim() || "Nairobi, Kenya"
+    };
+    this.data.settings = s; dbPut("settings", s);
+    this.closeSheet(); toast("Saved");
+  },
+
+  closeSheet(){ document.getElementById("sheetHost").innerHTML = ""; }
+};
+
+/* ===================== PDF GENERATION ===================== */
+const PDF = {
+  letterhead(doc, title){
+    const s = App.data.settings;
+    doc.setFont("helvetica","bold"); doc.setFontSize(16);
+    doc.setTextColor(27,58,47); doc.text(s.businessName, 14, 18);
+    doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90,83,70);
+    doc.text(`${s.location}${s.phone ? ' · '+s.phone : ''}${s.kraPin ? ' · KRA PIN: '+s.kraPin : ''}`, 14, 24);
+    doc.setDrawColor(217,208,187); doc.line(14, 28, 196, 28);
+    doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(33,29,24);
+    doc.text(title, 14, 38);
+  },
+  footer(doc){
+    doc.setFontSize(8); doc.setTextColor(150,140,120);
+    doc.text("Generated with Kalamu Books · " + new Date().toLocaleString("en-KE"), 14, 287);
+  },
+  save(doc, filename){ doc.save(filename); toast("PDF saved"); },
+
+  salesDoc(id){
+    const d = App.data.salesDocs.find(x=>x.id===id); if(!d) return;
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    this.letterhead(doc, SALES_TYPES[d.type].toUpperCase());
+    doc.setFontSize(10); doc.setTextColor(33,29,24);
+    doc.text(`Bill to: ${d.client}`, 14, 48);
+    doc.text(`Date: ${niceDate(d.date)}`, 140, 48);
+    if (d.dueDate) doc.text(`Due: ${niceDate(d.dueDate)}`, 140, 54);
+    if (d.note) doc.text(`Note: ${d.note}`, 14, 54);
+    let y = 64;
+    if (d.items && d.items.length){
+      doc.autoTable({
+        startY: y,
+        head: [["Description","Qty","Price","Amount"]],
+        body: d.items.map(i=>[i.desc, i.qty, fmt(i.price), fmt(i.qty*i.price)]),
+        theme: "grid", headStyles: { fillColor: [27,58,47] }, styles: { fontSize: 9 }
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+    doc.setFont("helvetica","bold"); doc.setFontSize(12);
+    doc.text(`Total: ${fmt(d.amount)}`, 14, y);
+    if (d.type==="invoice"){
+      doc.setFontSize(10);
+      if (d.status==="paid") doc.setTextColor(76,122,90); else doc.setTextColor(161,59,44);
+      doc.text(`Status: ${d.status==="paid"?"PAID":"DUE"}`, 14, y+8);
+    }
+    this.footer(doc);
+    this.save(doc, `${SALES_TYPES[d.type]}_${d.client}_${d.date}.pdf`.replace(/\s+/g,"_"));
+  },
+
+  purchaseDoc(id){
+    const d = App.data.purchaseDocs.find(x=>x.id===id); if(!d) return;
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    this.letterhead(doc, PURCHASE_TYPES[d.type].toUpperCase());
+    doc.setFontSize(10); doc.setTextColor(33,29,24);
+    let y = 48;
+    if (d.party){ doc.text(`Vendor/Supplier: ${d.party}`, 14, y); y += 6; }
+    doc.text(`Description: ${d.desc}`, 14, y); y += 6;
+    doc.text(`Category: ${d.category}`, 14, y); y += 6;
+    doc.text(`Date: ${niceDate(d.date)}`, 14, y); y += 6;
+    if (d.dueDate){ doc.text(`Due: ${niceDate(d.dueDate)}`, 14, y); y += 6; }
+    doc.setFont("helvetica","bold"); doc.setFontSize(12);
+    doc.text(`Amount: ${fmt(d.amount)}`, 14, y+4);
+    y += 16;
+    if (d.attachment && d.attachment.startsWith("data:image")){
+      try { doc.addImage(d.attachment, "JPEG", 14, y, 80, 60); } catch(e){}
+    } else if (d.attachment){
+      doc.setFontSize(9); doc.setTextColor(90,83,70); doc.text("Attachment on file (non-image, not embedded).", 14, y);
+    }
+    this.footer(doc);
+    this.save(doc, `${PURCHASE_TYPES[d.type]}_${d.desc}_${d.date}.pdf`.replace(/\s+/g,"_"));
+  },
+
+  profitLoss(){
+    const t = App.totals();
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    this.letterhead(doc, "PROFIT & LOSS STATEMENT");
+    doc.autoTable({
+      startY: 48,
+      body: [
+        ["Income received", fmt(t.income)],
+        ["Total expenses", fmt(t.expenses)],
+        ["Net profit", fmt(t.net)],
+      ],
+      theme: "plain", styles: { fontSize: 11 },
+      columnStyles: { 1: { halign: "right", fontStyle: "bold" } }
+    });
+    this.footer(doc);
+    this.save(doc, `Profit_Loss_${today()}.pdf`);
+  },
+
+  balanceSheet(){
+    const t = App.totals();
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    this.letterhead(doc, "BALANCE SHEET");
+    doc.autoTable({
+      startY: 48,
+      head: [["Assets","Amount"]],
+      body: [
+        ["Cash (income − expenses)", fmt(t.net)],
+        ["Inventory value", fmt(t.inventoryValue)],
+        ["Accounts receivable (owed to you)", fmt(t.due)],
+        ["Total assets", fmt(t.net + t.inventoryValue + t.due)],
+      ],
+      theme: "grid", headStyles: { fillColor: [27,58,47] }, styles: { fontSize: 10 }
+    });
+    this.footer(doc);
+    this.save(doc, `Balance_Sheet_${today()}.pdf`);
+  },
+
+  ledger(){
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    this.letterhead(doc, "GENERAL LEDGER");
+    const rows = [
+      ...App.data.salesDocs.map(d=>[niceDate(d.date), SALES_TYPES[d.type], d.client, "+" + fmt(d.amount).replace("KSh ","")]),
+      ...App.data.purchaseDocs.map(d=>[niceDate(d.date), PURCHASE_TYPES[d.type], d.desc, "-" + fmt(d.amount).replace("KSh ","")]),
+    ].sort((a,b)=> new Date(a[0]) - new Date(b[0]));
+    doc.autoTable({
+      startY: 48, head: [["Date","Type","Description","Amount (KSh)"]], body: rows,
+      theme: "striped", headStyles: { fillColor: [27,58,47] }, styles: { fontSize: 8.5 }
+    });
+    this.footer(doc);
+    this.save(doc, `Ledger_${today()}.pdf`);
+  },
+
+  customerStatement(client){
+    if (!client) return;
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    this.letterhead(doc, "CUSTOMER STATEMENT — " + client.toUpperCase());
+    const docs = App.data.salesDocs.filter(d=>d.client===client).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const balance = docs.filter(d=>d.type==="invoice" && d.status!=="paid").reduce((s,d)=>s+Number(d.amount),0);
+    doc.autoTable({
+      startY: 48, head: [["Date","Type","Amount","Status"]],
+      body: docs.map(d=>[niceDate(d.date), SALES_TYPES[d.type], fmt(d.amount), d.type==="invoice" ? d.status : "—"]),
+      theme: "grid", headStyles: { fillColor: [27,58,47] }, styles: { fontSize: 9 }
+    });
+    const y = doc.lastAutoTable.finalY + 10;
+    doc.setFont("helvetica","bold"); doc.setFontSize(11);
+    doc.text(`Outstanding balance: ${fmt(balance)}`, 14, y);
+    this.footer(doc);
+    this.save(doc, `Statement_${client}_${today()}.pdf`.replace(/\s+/g,"_"));
+  }
+};
+
+/* ===================== BACKUP / RESTORE ===================== */
+const Backup = {
+  async exportAll(){
+    const payload = {
+      version: 1, exportedAt: new Date().toISOString(),
+      salesDocs: App.data.salesDocs, purchaseDocs: App.data.purchaseDocs,
+      inventory: App.data.inventory, settings: App.data.settings
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `KalamuBooks_Backup_${today()}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("Backup downloaded");
+  },
+  async importAll(event){
+    const file = event.target.files[0]; if (!file) return;
+    const text = await file.text();
+    try {
+      const payload = JSON.parse(text);
+      if (!confirm("This will replace all current records with the backup file. Continue?")) return;
+      for (const s of STORES) {
+        const db = await dbPromise;
+        await new Promise((res,rej)=>{ const tx = db.transaction(s,"readwrite").objectStore(s).clear(); tx.onsuccess=res; tx.onerror=rej; });
+      }
+      for (const rec of payload.salesDocs||[]) await dbPut("salesDocs", rec);
+      for (const rec of payload.purchaseDocs||[]) await dbPut("purchaseDocs", rec);
+      for (const rec of payload.inventory||[]) await dbPut("inventory", rec);
+      if (payload.settings) await dbPut("settings", payload.settings);
+      await App.init();
+      toast("Backup restored");
+    } catch(e){
+      alert("That file couldn't be read as a Kalamu Books backup.");
+    }
+  }
+};
+
+App.init();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(err => console.warn("Service worker failed:", err));
+  });
+}
+</script>
+</body>
+</html>
